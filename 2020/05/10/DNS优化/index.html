@@ -40,7 +40,7 @@
 
   
   
-  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+  <link href="../../../../lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
 
 
 
@@ -48,21 +48,21 @@
 
 
 
-<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+<link href="../../../../lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
 
-<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
-
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+<link href="../../../../css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
 
 
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+  <link rel="apple-touch-icon" sizes="180x180" href="../../../../images/apple-touch-icon-next.png?v=5.1.4">
 
 
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../../../images/favicon-32x32-next.png?v=5.1.4">
 
 
-  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+  <link rel="icon" type="image/png" sizes="16x16" href="../../../../images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="../../../../images/logo.svg?v=5.1.4" color="#222">
 
 
 
@@ -82,21 +82,21 @@
 <meta name="description" content="DNS 原理入门 百度App网络深度优化系列《一》DNS优化 移动互联网时代，如何优化你的网络 —— 域名解析篇  一、原理简介首先关于DNS的作用，就不必多说了，能看到这篇文章多多少少有些了解。 这一小节的主要目的是对DNS系统有一定的轮廓概念，可以简单了解DNS的解析过程，并明白在这个过程中容易发生的一些问题。 我们平时看到的域名，是以分层的属性结构组织的：   而与域名的分层结构对应，用于">
 <meta property="og:type" content="article">
 <meta property="og:title" content="网络优化《一》：DNS">
-<meta property="og:url" content="http://icemoonlol.github.io/2020/05/10/DnsOptimize/index.html">
+<meta property="og:url" content="http://icemoonlol.github.io/2020/05/10/DNS%E4%BC%98%E5%8C%96/index.html">
 <meta property="og:site_name" content="IceAeterna&#39;s Blog">
 <meta property="og:description" content="DNS 原理入门 百度App网络深度优化系列《一》DNS优化 移动互联网时代，如何优化你的网络 —— 域名解析篇  一、原理简介首先关于DNS的作用，就不必多说了，能看到这篇文章多多少少有些了解。 这一小节的主要目的是对DNS系统有一定的轮廓概念，可以简单了解DNS的解析过程，并明白在这个过程中容易发生的一些问题。 我们平时看到的域名，是以分层的属性结构组织的：   而与域名的分层结构对应，用于">
-<meta property="og:image" content="https://note.youdao.com/yws/res/167433/WEBRESOURCEabc3f7c1c1d4182724ebca4933eb7fbc">
-<meta property="og:image" content="https://note.youdao.com/yws/res/167435/WEBRESOURCE168fc6cea347ad3bcd1aa2b93c391236">
-<meta property="og:image" content="http://note.youdao.com/yws/res/167255/WEBRESOURCE3eddec2a6cad65eb025e61b5412c622e">
-<meta property="og:image" content="http://note.youdao.com/yws/res/167356/WEBRESOURCE31d8b4d7b11a49fbc88c8796cf06b0da">
-<meta property="og:image" content="https://note.youdao.com/yws/res/167438/WEBRESOURCE7673d926faf7e9a132477568833d17e7">
+<meta property="og:image" content="http://icemoonlol.github.io/2020/05/10/DNS%E4%BC%98%E5%8C%96/DNS-Structure.png">
+<meta property="og:image" content="http://icemoonlol.github.io/2020/05/10/DNS%E4%BC%98%E5%8C%96/DNS-Query.png">
+<meta property="og:image" content="http://icemoonlol.github.io/2020/05/10/DNS%E4%BC%98%E5%8C%96/LocalDNS-Delegate.png">
+<meta property="og:image" content="http://icemoonlol.github.io/2020/05/10/DNS%E4%BC%98%E5%8C%96/HttpDNS-Product.png">
+<meta property="og:image" content="http://icemoonlol.github.io/2020/05/10/DNS%E4%BC%98%E5%8C%96/HttpDNS-Structure.png">
 <meta property="article:published_time" content="2020-05-10T11:04:45.000Z">
-<meta property="article:modified_time" content="2020-05-10T12:46:09.263Z">
+<meta property="article:modified_time" content="2020-05-10T13:59:06.070Z">
 <meta property="article:author" content="IceAeterna">
 <meta property="article:tag" content="网络优化">
 <meta property="article:tag" content="DNS">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://note.youdao.com/yws/res/167433/WEBRESOURCEabc3f7c1c1d4182724ebca4933eb7fbc">
+<meta name="twitter:image" content="http://icemoonlol.github.io/2020/05/10/DNS%E4%BC%98%E5%8C%96/DNS-Structure.png">
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-  <link rel="canonical" href="http://icemoonlol.github.io/2020/05/10/DnsOptimize/"/>
+  <link rel="canonical" href="http://icemoonlol.github.io/2020/05/10/DNS优化/"/>
 
 
 
@@ -188,7 +188,7 @@
       
         
         <li class="menu-item menu-item-home">
-          <a href="/" rel="section">
+          <a href="" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br />
             
@@ -198,7 +198,7 @@
       
         
         <li class="menu-item menu-item-tags">
-          <a href="/tags/" rel="section">
+          <a href="" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
             
@@ -208,7 +208,7 @@
       
         
         <li class="menu-item menu-item-categories">
-          <a href="/categories/" rel="section">
+          <a href="" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
             
@@ -218,7 +218,7 @@
       
         
         <li class="menu-item menu-item-archives">
-          <a href="/archives/" rel="section">
+          <a href="" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
             
@@ -259,12 +259,12 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://icemoonlol.github.io/2020/05/10/DnsOptimize/">
+    <link itemprop="mainEntityOfPage" href="http://icemoonlol.github.io">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="IceAeterna">
       <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="image" content="../../../../images/avatar.gif">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -311,7 +311,7 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96/" itemprop="url" rel="index">
+                  <a href="../../../../categories/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96/" itemprop="url" rel="index">
                     <span itemprop="name">网络优化</span>
                   </a>
                 </span>
@@ -356,11 +356,11 @@
 <h1 id="一、原理简介"><a href="#一、原理简介" class="headerlink" title="一、原理简介"></a>一、原理简介</h1><p>首先关于DNS的作用，就不必多说了，能看到这篇文章多多少少有些了解。</p>
 <p>这一小节的主要目的是对DNS系统有一定的轮廓概念，可以简单了解DNS的解析过程，并明白在这个过程中容易发生的一些问题。</p>
 <p>我们平时看到的域名，是以分层的属性结构组织的：</p>
-<img src="https://note.youdao.com/yws/res/167433/WEBRESOURCEabc3f7c1c1d4182724ebca4933eb7fbc" width="600">
+<img src="/2020/05/10/DNS%E4%BC%98%E5%8C%96/DNS-Structure.png" width="600">
 
 <p>而与域名的分层结构对应，用于处理域名解析的 DNS 服务器也是树形分层的。而DNS查询就是在各级域名服务器之间进行分层查询。</p>
 <p>以访问<a href="http://www.taobao.com为例" target="_blank" rel="noopener">www.taobao.com为例</a>:</p>
-<img src="https://note.youdao.com/yws/res/167435/WEBRESOURCE168fc6cea347ad3bcd1aa2b93c391236" width="600">
+<img src="/2020/05/10/DNS%E4%BC%98%E5%8C%96/DNS-Query.png" width="400">
 
 <p>一次完整的域名解析流程包括：</p>
 <ol>
@@ -395,7 +395,7 @@
 <li><p>调度不精确：权威DNS在域名解析时会根据LocalDNS的IP信息（运营商、地理位置）进行调度，返回地理位置最近的CDN节点地址。但LocalDNS的位置并不等同于用户的位置，主要有如下两种问题：</p>
 <ul>
 <li><p>解析转发：部分Local DNS供应商为了降低运营成本，会将请求到自己节点的域名解析请求转发给其他供应商的Local DNS节点。</p>
-  <img src="http://note.youdao.com/yws/res/167255/WEBRESOURCE3eddec2a6cad65eb025e61b5412c622e" width="600">
+  <img src="/2020/05/10/DNS%E4%BC%98%E5%8C%96/LocalDNS-Delegate.png" width="400">
 </li>
 <li><p>LocalDNS部署：运营商LocalDNS的部署密度较低，LocalDNS服务器距离用户较远。</p>
 </li>
@@ -414,10 +414,10 @@
 <li>对于服务提供商的自家业务，会有更精确的调度，比如更精细的区域调度、海外ip调度到加速节点、集群故障把请求转移到备份集群上等</li>
 </ul>
 <p>HttpDNS的提供商很多（云计算服务居家必备产品），我们按”httpDNS inurl:product”搜索试试看：</p>
-<img src="http://note.youdao.com/yws/res/167356/WEBRESOURCE31d8b4d7b11a49fbc88c8796cf06b0da" width="600">
+<img src="/2020/05/10/DNS%E4%BC%98%E5%8C%96/HttpDNS-Product.png" width="400">
 
 <p>最后，借助百度HttpDNS的整体架构图，来讲讲HttpDNS在客户端的部署使用需要注意的一些问题：</p>
-<img src="https://note.youdao.com/yws/res/167438/WEBRESOURCE7673d926faf7e9a132477568833d17e7" width="600">
+<img src="/2020/05/10/DNS%E4%BC%98%E5%8C%96/HttpDNS-Structure.png" width="600">
 
 <blockquote>
 <p>实际上这些产品一般都提供了客户端集成的SDK，封装了很多问题的解决方案，但有很多问题还是需要应用自己注意的。</p>
@@ -474,9 +474,9 @@
       
         <div class="post-tags">
           
-            <a href="/tags/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96/" rel="tag"># 网络优化</a>
+            <a href="../../../../tags/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96/" rel="tag"># 网络优化</a>
           
-            <a href="/tags/DNS/" rel="tag"># DNS</a>
+            <a href="../../../../tags/DNS/" rel="tag"># DNS</a>
           
         </div>
       
@@ -556,7 +556,7 @@
             
               <div class="site-state-item site-state-posts">
               
-                <a href="/archives/%7C%7C%20archive">
+                <a href="../../../../archives/%7C%7C%20archive">
               
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">日志</span>
@@ -568,7 +568,7 @@
               
               
               <div class="site-state-item site-state-categories">
-                <a href="/categories/index.html">
+                <a href="../../../../categories/index.html">
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
@@ -579,7 +579,7 @@
               
               
               <div class="site-state-item site-state-tags">
-                <a href="/tags/index.html">
+                <a href="../../../../tags/index.html">
                   <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
@@ -710,64 +710,64 @@
 
   
   
-    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+    <script type="text/javascript" src="../../../../lib/jquery/index.js?v=2.1.3"></script>
   
 
   
   
-    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+    <script type="text/javascript" src="../../../../lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
   
 
   
   
-    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+    <script type="text/javascript" src="../../../../lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
   
 
   
   
-    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+    <script type="text/javascript" src="../../../../lib/velocity/velocity.min.js?v=1.2.1"></script>
   
 
   
   
-    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+    <script type="text/javascript" src="../../../../lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
   
 
   
   
-    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+    <script type="text/javascript" src="../../../../lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
   
-
-
-  
-
-
-  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
-
-  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
-
-
-
-  
-  
-
-
-  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
-
-  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
-
-
-
-  
-  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
-<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
-
 
 
   
 
 
-  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+  <script type="text/javascript" src="../../../../js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="../../../../js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="../../../../js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="../../../../js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="../../../../js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="../../../../js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="../../../../js/src/bootstrap.js?v=5.1.4"></script>
 
 
 
