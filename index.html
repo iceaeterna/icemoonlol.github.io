@@ -177,7 +177,7 @@
       
         
         <li class="menu-item menu-item-home">
-          <a href="/%20" rel="section">
+          <a href="/" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br />
             
@@ -187,7 +187,7 @@
       
         
         <li class="menu-item menu-item-tags">
-          <a href="/tags/%20" rel="section">
+          <a href="/tags/" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
             
@@ -197,7 +197,7 @@
       
         
         <li class="menu-item menu-item-categories">
-          <a href="/categories/%20" rel="section">
+          <a href="/categories/" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
             
@@ -207,7 +207,7 @@
       
         
         <li class="menu-item menu-item-archives">
-          <a href="/archives/%20" rel="section">
+          <a href="/archives/" rel="section">
             
               <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
             
@@ -341,117 +341,21 @@
       
         
           
-            <ul>
-<li><a href="https://www.ruanyifeng.com/blog/2016/06/dns.html" target="_blank" rel="noopener">DNS 原理入门</a></li>
-<li><a href="https://mp.weixin.qq.com/s/iaPtSF-twWz-AN66UJUBDg" target="_blank" rel="noopener">百度App网络深度优化系列《一》DNS优化</a></li>
-<li><a href="https://yq.aliyun.com/articles/58967" target="_blank" rel="noopener">移动互联网时代，如何优化你的网络 —— 域名解析篇</a></li>
-</ul>
-<h1 id="一、原理简介"><a href="#一、原理简介" class="headerlink" title="一、原理简介"></a>一、原理简介</h1><p>首先关于DNS的作用，就不必多说了，能看到这篇文章多多少少有些了解。</p>
-<p>这一小节的主要目的是对DNS系统有一定的轮廓概念，可以简单了解DNS的解析过程，并明白在这个过程中容易发生的一些问题。</p>
-<p>我们平时看到的域名，是以分层的属性结构组织的：</p>
-<img src="https://note.youdao.com/yws/res/167433/WEBRESOURCEabc3f7c1c1d4182724ebca4933eb7fbc" width="400">
-
-<p>而与域名的分层结构对应，用于处理域名解析的 DNS 服务器也是树形分层的。而DNS查询就是在各级域名服务器之间进行分层查询。</p>
-<p>以访问<a href="http://www.taobao.com为例" target="_blank" rel="noopener">www.taobao.com为例</a>:</p>
-<img src="https://note.youdao.com/yws/res/167435/WEBRESOURCE168fc6cea347ad3bcd1aa2b93c391236" width="400">
-
-<p>一次完整的域名解析流程包括：</p>
-<ol>
-<li>终端向Local DNS发起域名解析请求；</li>
-<li>Local DNS在获取到域名解析请求后首先从Root Hints获取根域名服务器的地址（Root Hints包含了互联网DNS根服务器的地址信息，一般是不会变的）；</li>
-<li>获取了根域名服务器地址后Local DNS向根域名服务器发起DNS解析请求，根域名服务器返回com顶级域名服务器地址；</li>
-<li>随后Local DNS向com域名服务器发起解析请求，并得到taobao.com二级域名服务器的地址；</li>
-<li>Local DNS向taobao.com二级域名服务器发起解析请求，并最终获得了<a href="http://www.taobao.com的IP地址信息；" target="_blank" rel="noopener">www.taobao.com的IP地址信息；</a></li>
-<li>Local DNS将递归查询获得的IP地址信息缓存并返回给客户端；</li>
-</ol>
-<p>其中：</p>
-<ul>
-<li><p>LocalDNS有对终端的域名解析请求进行代理和缓存的功能。LocalDNS服务一般由运营商提供，并且我们一般也不需要手动指定本机的LocalDNS地址，运营商会通过DHCP协议在系统网络初始化阶段将Local DNS地址分配给我们的计算机。但也可以手动指定本机的LocalDNS地址为公共DNS地址，如Google的8.8.8.8。</p>
-</li>
-<li><p>LocalDNS的Root Hints一般是一个LocalDNS文件，其内容示例如下：</p>
-  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">.                        3600000      NS    A.ROOT-SERVERS.NET.</span><br><span class="line">A.ROOT-SERVERS.NET.      3600000      A     198.41.0.4</span><br><span class="line">A.ROOT-SERVERS.NET.      3600000      AAAA  2001:503:ba3e::2:30</span><br><span class="line">; </span><br><span class="line">; FORMERLY NS1.ISI.EDU </span><br><span class="line">;</span><br><span class="line">.                        3600000      NS    B.ROOT-SERVERS.NET.</span><br><span class="line">B.ROOT-SERVERS.NET.      3600000      A     199.9.14.201</span><br><span class="line">B.ROOT-SERVERS.NET.      3600000      AAAA  2001:500:200::b</span><br><span class="line">;</span><br></pre></td></tr></table></figure>
-<p>  文件内容描述了根服务器的ipv4/v6地址和TTL，但可以看到由于根服务器的地址信息一般不会变化，所以其过期时间非常长（3600000秒，1000小时）</p>
-</li>
-</ul>
-<p>实例探索：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line">NEVEZHANG-MB0:~ iceaeterna$ dig +trace +additional mp.weixin.qq.com</span><br><span class="line"></span><br><span class="line">; &lt;&lt;&gt;&gt; DiG 9.10.6 &lt;&lt;&gt;&gt; +trace +additional mp.weixin.qq.com</span><br><span class="line">;; global options: +cmd</span><br><span class="line"></span><br><span class="line"># 根域名的NS(Name Server，返回保存下一级域名信息的服务器地址)记录</span><br><span class="line">.			575	IN	NS	h.root-servers.net.</span><br><span class="line">.			575	IN	NS	a.root-servers.net.</span><br><span class="line">.			...</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"># 根域名的A(Address，返回域名指向的IP地址)记录</span><br><span class="line">h.root-servers.net.	450	IN	A	198.97.190.53</span><br><span class="line">...</span><br><span class="line"># 可以看到，跟Root Hint的a.root-servers是相同的</span><br><span class="line">a.root-servers.net.	331	IN	A	198.41.0.4</span><br><span class="line">...</span><br><span class="line"># 根域名的AAAA(IpV6地址)记录</span><br><span class="line">a.root-servers.net.	102	IN	AAAA	2001:503:ba3e::2:30</span><br><span class="line">;; Received 901 bytes from 192.168.2.1#53(192.168.2.1) in 45 ms</span><br><span class="line"></span><br><span class="line">## com顶级域名的NS记录</span><br><span class="line">com.			172800	IN	NS	h.gtld-servers.net.</span><br><span class="line">com.			172800	IN	NS	l.gtld-servers.net.</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">## com顶级域名的A记录</span><br><span class="line">m.gtld-servers.net.	172800	IN	A	192.55.83.30</span><br><span class="line">l.gtld-servers.net.	172800	IN	A	192.41.162.30</span><br><span class="line">...</span><br><span class="line">m.gtld-servers.net.	172800	IN	AAAA	2001:501:b1f9::30</span><br><span class="line">l.gtld-servers.net.	172800	IN	AAAA	2001:500:d937::30</span><br><span class="line">;; Received 1179 bytes from 192.36.148.17#53(i.root-servers.net) in 253 ms</span><br><span class="line"></span><br><span class="line">### qq二级域名的NS记录</span><br><span class="line">qq.com.			172800	IN	NS	ns1.qq.com.</span><br><span class="line">qq.com.			172800	IN	NS	ns2.qq.com.</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">### qq二级域名的A记录</span><br><span class="line">ns1.qq.com.		172800	IN	A	101.89.19.165</span><br><span class="line">ns1.qq.com.		172800	IN	A	157.255.246.101</span><br><span class="line">ns1.qq.com.		172800	IN	A	183.3.226.207</span><br><span class="line">...</span><br><span class="line">;; Received 858 bytes from 192.54.112.30#53(h.gtld-servers.net) in 387 ms</span><br><span class="line"></span><br><span class="line">#### weixin子域名的NS记录</span><br><span class="line">#### 可以看到根据运营商不同，微信部署了多组子域名DNS服务器</span><br><span class="line">weixin.qq.com.		86400	IN	NS	ns-cmn1.qq.com.</span><br><span class="line">weixin.qq.com.		86400	IN	NS	ns-tel1.qq.com.</span><br><span class="line">weixin.qq.com.		86400	IN	NS	ns-cnc1.qq.com.</span><br><span class="line">weixin.qq.com.		86400	IN	NS	ns-os1.qq.com.</span><br><span class="line"></span><br><span class="line">#### weixin子域名的A记录</span><br><span class="line">ns-cmn1.qq.com.		3600	IN	A	121.51.129.28</span><br><span class="line">ns-cmn1.qq.com.		3600	IN	A	182.254.52.55</span><br><span class="line">...</span><br><span class="line">;; Received 308 bytes from 183.3.226.207#53(ns1.qq.com) in 19 ms</span><br><span class="line"></span><br><span class="line">##### mp的CNAME记录</span><br><span class="line">mp.weixin.qq.com.	600	IN	CNAME	mpv6.weixin.qq.com.</span><br><span class="line"></span><br><span class="line">##### mpv6.weixin.qq.com的A记录</span><br><span class="line">mpv6.weixin.qq.com.	600	IN	A	140.206.164.183</span><br><span class="line">mpv6.weixin.qq.com.	600	IN	A	116.128.163.223</span><br><span class="line">mpv6.weixin.qq.com.	600	IN	A	223.167.105.44</span><br><span class="line">mpv6.weixin.qq.com.	600	IN	A	58.247.205.110</span><br><span class="line">;; Received 128 bytes from 111.161.107.195#53(ns-cnc1.qq.com) in 69 ms</span><br></pre></td></tr></table></figure>
-<p>注意最后子域名是一个CNAME(Canonical Name)记录，主要用于域名的内部跳转，即”mp.weixin.qq.com.”指向的实际是”mpv6.weixin.qq.com.”。</p>
-<p>最后，重点讲一下整个过程中会出现的问题。</p>
-<ol>
-<li><p>域名劫持</p>
-<ul>
-<li>黑客侵入并篡改终端的LocalDNS，指向黑客自己伪造的Local DNS</li>
-<li>攻击者可以监听终端用户的域名解析请求，并在Local DNS返回正确结果之前将伪造的DNS解析响应传递给终端用户。上述这两种影响面都比较小。</li>
-<li><a href="https://baike.baidu.com/item/DNS%E6%B1%A1%E6%9F%93/8620359?fromtitle=%E5%9F%9F%E5%90%8D%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BC%93%E5%AD%98%E6%B1%A1%E6%9F%93&fromid=882524" target="_blank" rel="noopener">Local DNS缓存污染</a>，如DNS解析缓存结果被指向第三方广告页。这也是影响面更广的一种问题。</li>
-</ul>
-</li>
-<li><p>调度不精确：权威DNS在域名解析时会根据LocalDNS的IP信息（运营商、地理位置）进行调度，返回地理位置最近的CDN节点地址。但LocalDNS的位置并不等同于用户的位置，主要有如下两种问题：</p>
-<ul>
-<li><p>解析转发：部分Local DNS供应商为了降低运营成本，会将请求到自己节点的域名解析请求转发给其他供应商的Local DNS节点。</p>
-  <img src="http://note.youdao.com/yws/res/167255/WEBRESOURCE3eddec2a6cad65eb025e61b5412c622e" width="300"/>
-</li>
-<li><p>LocalDNS部署：运营商LocalDNS的部署密度较低，LocalDNS服务器距离用户较远。</p>
-</li>
-</ul>
-</li>
-<li><p>变更生效延迟：各个运营商对于DNS缓存处理上策略不同，权威DNS变更的解析结果全网生效的周期非常漫长（最长生效时间甚至高达48小时）。</p>
-</li>
-</ol>
-<h1 id="二、HttpDNS及其使用"><a href="#二、HttpDNS及其使用" class="headerlink" title="二、HttpDNS及其使用"></a>二、HttpDNS及其使用</h1><p>HttpDNS原理上是使用HTTP连接，把域名解析请求直接发送到HTTPDNS服务端，从而绕过运营商的Local DNS。</p>
-<p>主要有如下一些优点：</p>
-<ul>
-<li>基于http连接，请求结果更为稳定可靠（并且保留了HTTPS等扩展能力，可以更好地应对攻击）</li>
-<li>服务提供商对于解析缓存的保障（x个9的SLA），可以有效避免缓存污染的问题</li>
-<li>服务提供商所提供的HttpDNS服务一般都是基于BGP Anycast接入的，会根据所使用运营商和所在地理位置，调度到其部署在运营商的CDN节点，实现就近接入，把HttpDNS变成”Local”DNS。</li>
-<li>可以直接将终端用户的IP信息直接交付给权威DNS来进行精准调度（ edns-client-subnet），而不用受LocalDNS位置的干扰。</li>
-<li>对于服务提供商的自家业务，会有更精确的调度，比如更精细的区域调度、海外ip调度到加速节点、集群故障把请求转移到备份集群上等</li>
-</ul>
-<p>HttpDNS的提供商很多（云计算服务居家必备产品），我们按”httpDNS inurl:product”搜索试试看：</p>
-<img src="http://note.youdao.com/yws/res/167356/WEBRESOURCE31d8b4d7b11a49fbc88c8796cf06b0da" width="300"/>
-
-<p>最后，借助百度HttpDNS的整体架构图，来讲讲HttpDNS在客户端的部署使用需要注意的一些问题：</p>
-<img src="https://note.youdao.com/yws/res/167438/WEBRESOURCE7673d926faf7e9a132477568833d17e7" width="350"/>
-
-<blockquote>
-<p>实际上这些产品一般都提供了客户端集成的SDK，封装了很多问题的解决方案，但有很多问题还是需要应用自己注意的。</p>
-</blockquote>
-<ol>
-<li><p>安全性：为了进一步增强安全性，可以使用Https与HttpDNS服务器进行通信。此外，使用VirtualIP直连，不需要解析HttpDNS服务器地址。（这些都依赖于服务提供商的支持）</p>
-</li>
-<li><p>容灾策略：</p>
-<ul>
-<li>降级：当HttpDNS服务不可用的时候（或返回结果不可用、连接超时），<strong>降级为LocalDNS</strong>进行解析</li>
-<li>备份：HttpDNS和LocalDNS都不可用的时候，<strong>使用backup IP进行访问</strong>，backup IP是对自己应用业务需要访问的一些核心域名的IP列表，并且应当做到可动态维护。最坏的情况下，可以hard code部分核心域名到应用中作为backup IP的兜底。出于实现的性能和成本的角度考虑，backup IP不需要做到根据用户运营商和位置返回最优，但可以通过RR（轮询）或随机选取来实现负载均衡。</li>
-</ul>
-</li>
-<li><p>IP选取策略：一般由DNS服务端保证最优选取，并将最优IP按顺序下发，客户端默认选取返回结果的第一个即可。</p>
-</li>
-<li><p>缓存策略：实际上图中的缓存策略、命中率策略、任务调度策略，都可以统一为缓存策略的概念，其目的是提高DNS解析效率。</p>
-<ul>
-<li><strong>预缓存</strong>：在应用启动、网络切换（网络类型或运营商可能变了，一定要重刷）时，批量请求解析一些核心域名进行缓存</li>
-<li>缓存过期处理：<ul>
-<li><strong>重新请求</strong>，等返回新的解析结果：最简单的处理方式，但如果TTL较短的话，会因缓存项过期而导致命中率比较低</li>
-<li>返回旧的请求结果，并<strong>异步更新</strong>过期项：在同一网络环境下，解析结果很可能是一致的。当然，过期的缓存项可能会导致请求失败（连接超时或请求返回错误），但是如果失败率很低，那么用0.1%场景的失败换取99.9%的性能提升还是划得来的</li>
-<li><strong>缓存刷新</strong>：还有一种方法，是每次触发网络请求时，都对对应的缓存项进行有效期检查，对于即将失效的缓存项，发起一次异步的更新（如设置刷新阈值为TTL的75%）</li>
-</ul>
-</li>
-<li>本地缓存：用于对预缓存结果尚未返回之前的网络请求进行DNS解析加速，这种方法更为激进、缓存项过期和请求失败率会更高。个人觉得本地缓存的使用，最好是与缓存解析结果时处于同一网络环境，并且缓存项未过期（设置本地缓存的有效期，可以与TTL相同，如300s，也可以适当更长一些，如600s）。</li>
-</ul>
-</li>
-<li><p><strong>超时限制</strong>：HttpDNS请求也应当设置超时，并且要尽可能短些，以避免在HttpDNS服务不可用时对请求整体速度的拖累，例如2~5s。</p>
-</li>
-<li><p>Ipv4/Ipv6协议栈探测：通过UDP Connect进行探测，并缓存当前网络环境的协议栈探测结果，然后根据Happy Eyeball选取Ipv4/Ipv6地址。</p>
-<blockquote>
-<p>当我们调用UDP的connect方法时，系统会检测其端口是否可用，地址是否正确，然后记录对端的IP地址和端口号，返回给调用者，所以UDP Connect不会像TCP Connect发起三次握手，发生网络真实损耗。</p>
-</blockquote>
-</li>
-</ol>
-<h1 id="附：为什么不能直接把域名改成ip访问？"><a href="#附：为什么不能直接把域名改成ip访问？" class="headerlink" title="附：为什么不能直接把域名改成ip访问？"></a>附：为什么不能直接把域名改成ip访问？</h1><p>(Web)服务器会把Http请求头中的Host头作为请求的域名：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt; GET &#x2F;index.html HTTP&#x2F;1.1</span><br><span class="line">&gt; Host: www.aliyun.com</span><br><span class="line">&gt; User-Agent: curl&#x2F;7.43.0</span><br><span class="line">&gt; Accept: *&#x2F;*</span><br></pre></td></tr></table></figure>
-<p>但把域名改成ip访问后，Host头同样会被改成ip，而服务端一个ip上可能部署了多个域名，如果按ip访问，服务端也不知道是对哪个域名的请求。</p>
-<p>因此，我们可以把域名改为ip建立到服务器的访问，但是要把Host头改回来，例如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">String originalUrl &#x3D; “http:&#x2F;&#x2F;www.aliyun.com&#x2F;index.html&quot;;</span><br><span class="line">URL url &#x3D; new URL(originalURL);</span><br><span class="line">String originalHost &#x3D; url.getHost();</span><br><span class="line">&#x2F;&#x2F; 同步获取IP</span><br><span class="line">String ip &#x3D; httpdns.getIpByHost(originalHost);</span><br><span class="line">HttpURLConnection conn;</span><br><span class="line">if (ip !&#x3D; null) &#123;</span><br><span class="line">    &#x2F;&#x2F; 通过HTTPDNS获取IP成功，进行URL替换和Host头设置</span><br><span class="line">    url &#x3D; new URL(originalUrl.replaceFirst(originalHost, ip));</span><br><span class="line">    conn &#x3D; (HttpURLConnection) url.openConnection();</span><br><span class="line">    &#x2F;&#x2F; 设置请求Host头</span><br><span class="line">    conn.setRequestProperty(&quot;Host&quot;, originHost);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    conn &#x3D; (HttpURLConnection) url.openConnection();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
           
+DNS 原理入门
+百度App网络深度优化系列《一》DNS优化
+移动互联网时代，如何优化你的网络 —— 域名解析篇
+
+一、原理简介首先关于DNS的作用，就不必多说了，能看到这篇文章多多少少有些了解。
+这一小节的主要目的是对DNS系统有一定的轮廓概念，可以简单了解DNS的解析过程，并明白在这个过程中容
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2020/05/10/dns%E4%BC%98%E5%8C%96/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -529,7 +433,7 @@
             
               <div class="site-state-item site-state-posts">
               
-                <a href="/archives/%20%7C%7C%20archive">
+                <a href="/archives/%7C%7C%20archive">
               
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">日志</span>
@@ -541,10 +445,10 @@
               
               
               <div class="site-state-item site-state-categories">
-                
+                <a href="/categories/index.html">
                   <span class="site-state-item-count">1</span>
                   <span class="site-state-item-name">分类</span>
-                
+                </a>
               </div>
             
 
@@ -552,10 +456,10 @@
               
               
               <div class="site-state-item site-state-tags">
-                
+                <a href="/tags/index.html">
                   <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">标签</span>
-                
+                </a>
               </div>
             
 
