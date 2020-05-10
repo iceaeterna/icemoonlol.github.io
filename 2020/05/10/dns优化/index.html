@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="网络优化,DNS," />
 
 
 
@@ -79,12 +79,24 @@
 
 
 
-<meta property="og:type" content="website">
-<meta property="og:title" content="IceAeterna&#39;s Blog">
-<meta property="og:url" content="http://yoursite.com/index.html">
+<meta name="description" content="DNS 原理入门 百度App网络深度优化系列《一》DNS优化 移动互联网时代，如何优化你的网络 —— 域名解析篇  一、原理简介首先关于DNS的作用，就不必多说了，能看到这篇文章多多少少有些了解。 这一小节的主要目的是对DNS系统有一定的轮廓概念，可以简单了解DNS的解析过程，并明白在这个过程中容易发生的一些问题。 我们平时看到的域名，是以分层的属性结构组织的：   而与域名的分层结构对应，用于">
+<meta property="og:type" content="article">
+<meta property="og:title" content="网络优化《一》：DNS">
+<meta property="og:url" content="http://yoursite.com/2020/05/10/dns%E4%BC%98%E5%8C%96/index.html">
 <meta property="og:site_name" content="IceAeterna&#39;s Blog">
+<meta property="og:description" content="DNS 原理入门 百度App网络深度优化系列《一》DNS优化 移动互联网时代，如何优化你的网络 —— 域名解析篇  一、原理简介首先关于DNS的作用，就不必多说了，能看到这篇文章多多少少有些了解。 这一小节的主要目的是对DNS系统有一定的轮廓概念，可以简单了解DNS的解析过程，并明白在这个过程中容易发生的一些问题。 我们平时看到的域名，是以分层的属性结构组织的：   而与域名的分层结构对应，用于">
+<meta property="og:image" content="https://note.youdao.com/yws/res/167433/WEBRESOURCEabc3f7c1c1d4182724ebca4933eb7fbc">
+<meta property="og:image" content="https://note.youdao.com/yws/res/167435/WEBRESOURCE168fc6cea347ad3bcd1aa2b93c391236">
+<meta property="og:image" content="http://note.youdao.com/yws/res/167255/WEBRESOURCE3eddec2a6cad65eb025e61b5412c622e">
+<meta property="og:image" content="http://note.youdao.com/yws/res/167356/WEBRESOURCE31d8b4d7b11a49fbc88c8796cf06b0da">
+<meta property="og:image" content="https://note.youdao.com/yws/res/167438/WEBRESOURCE7673d926faf7e9a132477568833d17e7">
+<meta property="article:published_time" content="2020-05-10T11:04:45.000Z">
+<meta property="article:modified_time" content="2020-05-10T11:18:24.428Z">
 <meta property="article:author" content="IceAeterna">
+<meta property="article:tag" content="网络优化">
+<meta property="article:tag" content="DNS">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://note.youdao.com/yws/res/167433/WEBRESOURCEabc3f7c1c1d4182724ebca4933eb7fbc">
 
 
 
@@ -114,13 +126,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/"/>
+  <link rel="canonical" href="http://yoursite.com/2020/05/10/dns优化/"/>
 
 
 
 
 
-  <title>IceAeterna's Blog</title>
+  <title>网络优化《一》：DNS | IceAeterna's Blog</title>
   
 
 
@@ -139,8 +151,7 @@
     
   
 
-  <div class="container sidebar-position-left 
-  page-home">
+  <div class="container sidebar-position-left page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -233,9 +244,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -265,9 +276,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/blog/2020/05/10/dns%E4%BC%98%E5%8C%96/" itemprop="url">网络优化《一》：DNS</a></h1>
+          <h1 class="post-title" itemprop="name headline">网络优化《一》：DNS</h1>
         
 
         <div class="post-meta">
@@ -339,9 +348,7 @@
       
 
       
-        
-          
-            <ul>
+        <ul>
 <li><a href="https://www.ruanyifeng.com/blog/2016/06/dns.html" target="_blank" rel="noopener">DNS 原理入门</a></li>
 <li><a href="https://mp.weixin.qq.com/s/iaPtSF-twWz-AN66UJUBDg" target="_blank" rel="noopener">百度App网络深度优化系列《一》DNS优化</a></li>
 <li><a href="https://yq.aliyun.com/articles/58967" target="_blank" rel="noopener">移动互联网时代，如何优化你的网络 —— 域名解析篇</a></li>
@@ -451,8 +458,6 @@
 <p>但把域名改成ip访问后，Host头同样会被改成ip，而服务端一个ip上可能部署了多个域名，如果按ip访问，服务端也不知道是对哪个域名的请求。</p>
 <p>因此，我们可以把域名改为ip建立到服务器的访问，但是要把Host头改回来，例如：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">String originalUrl &#x3D; “http:&#x2F;&#x2F;www.aliyun.com&#x2F;index.html&quot;;</span><br><span class="line">URL url &#x3D; new URL(originalURL);</span><br><span class="line">String originalHost &#x3D; url.getHost();</span><br><span class="line">&#x2F;&#x2F; 同步获取IP</span><br><span class="line">String ip &#x3D; httpdns.getIpByHost(originalHost);</span><br><span class="line">HttpURLConnection conn;</span><br><span class="line">if (ip !&#x3D; null) &#123;</span><br><span class="line">    &#x2F;&#x2F; 通过HTTPDNS获取IP成功，进行URL替换和Host头设置</span><br><span class="line">    url &#x3D; new URL(originalUrl.replaceFirst(originalHost, ip));</span><br><span class="line">    conn &#x3D; (HttpURLConnection) url.openConnection();</span><br><span class="line">    &#x2F;&#x2F; 设置请求Host头</span><br><span class="line">    conn.setRequestProperty(&quot;Host&quot;, originHost);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    conn &#x3D; (HttpURLConnection) url.openConnection();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
       
     </div>
     
@@ -467,14 +472,22 @@
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/blog/tags/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96/" rel="tag"># 网络优化</a>
+          
+            <a href="/blog/tags/DNS/" rel="tag"># DNS</a>
+          
+        </div>
+      
+
+      
+      
+      
 
       
 
       
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -484,10 +497,11 @@
   </article>
 
 
-    
-  </section>
 
-  
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
@@ -495,6 +509,10 @@
 
 
           
+
+  
+
+
 
         </div>
         
@@ -515,8 +533,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -576,6 +603,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#一、原理简介"><span class="nav-number">1.</span> <span class="nav-text">一、原理简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#二、HttpDNS及其使用"><span class="nav-number">2.</span> <span class="nav-text">二、HttpDNS及其使用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#附：为什么不能直接把域名改成ip访问？"><span class="nav-number">3.</span> <span class="nav-text">附：为什么不能直接把域名改成ip访问？</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -716,6 +759,10 @@
 
 
   
+  <script type="text/javascript" src="/blog/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/blog/js/src/post-details.js?v=5.1.4"></script>
+
+
 
   
 
