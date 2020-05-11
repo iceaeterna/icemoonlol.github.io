@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"icemoonlol.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="参考文章：  【Android】OkHttp 源码剖析系列（六）——连接复用机制及连接的建立 HTTP&#x2F;1 缺点总结  一、Http中的连接复用在HTTP&#x2F;1.0默认实现中，每个连接都是独立、互不干扰的，但也意味着每次请求都需要经历TCP连接三次握手、四次挥手的过程，频繁的连接建立和关闭会限制网络传输效率。   而在非官方实现中，可以通过 1Connection: Keep-Alive 来建立一个">
+<meta property="og:type" content="article">
+<meta property="og:title" content="网络优化《二》：连接复用">
+<meta property="og:url" content="http://icemoonlol.github.io/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/index.html">
+<meta property="og:site_name" content="IceAeterna&#39;s Blog">
+<meta property="og:description" content="参考文章：  【Android】OkHttp 源码剖析系列（六）——连接复用机制及连接的建立 HTTP&#x2F;1 缺点总结  一、Http中的连接复用在HTTP&#x2F;1.0默认实现中，每个连接都是独立、互不干扰的，但也意味着每次请求都需要经历TCP连接三次握手、四次挥手的过程，频繁的连接建立和关闭会限制网络传输效率。   而在非官方实现中，可以通过 1Connection: Keep-Alive 来建立一个">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://icemoonlol.github.io/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/Http-Serial.png">
+<meta property="og:image" content="http://icemoonlol.github.io/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/Http-KeepAlive.png">
+<meta property="og:image" content="http://icemoonlol.github.io/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/Http-Pipelining.png">
+<meta property="og:image" content="http://icemoonlol.github.io/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/Http2-Multiplexing.jpg">
+<meta property="article:published_time" content="2020-05-10T14:32:05.000Z">
+<meta property="article:modified_time" content="2020-05-10T15:22:52.927Z">
+<meta property="article:author" content="IceAeterna">
+<meta property="article:tag" content="网络优化">
+<meta property="article:tag" content="连接复用">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://icemoonlol.github.io/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/Http-Serial.png">
+
+<link rel="canonical" href="http://icemoonlol.github.io/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>网络优化《二》：连接复用 | IceAeterna's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">IceAeterna's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Eloim Essaim</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://icemoonlol.github.io/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="IceAeterna">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="IceAeterna's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          网络优化《二》：连接复用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-10 22:32:05 / 修改时间：23:22:52" itemprop="dateCreated datePublished" datetime="2020-05-10T22:32:05+08:00">2020-05-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96/" itemprop="url" rel="index"><span itemprop="name">网络优化</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>参考文章：</p>
+<ul>
+<li><a href="https://blog.n0texpecterr0r.cn/2019/08/03/%E3%80%90android%E3%80%91okhttp-%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90%EF%BC%88%E5%85%AD%EF%BC%89-%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8%E6%9C%BA%E5%88%B6%E5%8F%8A%E8%BF%9E%E6%8E%A5/" target="_blank" rel="noopener">【Android】OkHttp 源码剖析系列（六）——连接复用机制及连接的建立</a></li>
+<li><a href="https://github.com/Pines-Cheng/blog/issues/41" target="_blank" rel="noopener">HTTP/1 缺点总结</a></li>
+</ul>
+<h1 id="一、Http中的连接复用"><a href="#一、Http中的连接复用" class="headerlink" title="一、Http中的连接复用"></a>一、Http中的连接复用</h1><p>在HTTP/1.0默认实现中，每个连接都是独立、互不干扰的，但也意味着每次请求都需要经历TCP连接三次握手、四次挥手的过程，频繁的连接建立和关闭会限制网络传输效率。</p>
+<img src="/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/Http-Serial.png" width="500">
+
+<p>而在非官方实现中，可以通过</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
+<p>来建立一个持久化连接。持久化连接为连接复用提供了可能，如果请求的域名和端口号相同，就可以使用尚未被关闭的持久连接，以减小连接打开和关闭的开销。到了HTTP/1.1，所有的连接都是默认Keep-Alive的。</p>
+<a id="more"></a>
+
+<img src="/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/Http-KeepAlive.png" width="500">
+
+<p>但HTTP1中的持久化连接在并行发起请求时，仍然需要建立多个连接。</p>
+<p>因此，HTTP/1.1还引入一个管线机制来将多个HTTP请求整批提交，而后一个请求的发送不需要等待前一个请求的结束。</p>
+<p align="center">
+<img src="/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/Http-Pipelining.png" width="400">
+</p>
+
+<p>但是，管线化虽然不用排队发送，但是服务端仍然需要按照客户端发送请求的顺序来回复请求，如果前面的请求阻塞了，后面的请求即使处理完成了，也要继续等待前面的请求，即会有“队首阻塞”（HTTP队首阻塞）的问题，在宽带连接环境下，其效率并不高。</p>
+<blockquote>
+<p>并且，管线化依赖服务端和客户端的支持，有互操作性的问题，在HTTP1.1中也是默认关闭的。而OkHttp也压根没支持管线化，毕竟后来有了HTTP/2.0。</p>
+</blockquote>
+<p>而到了HTTP/2.0引入了多路复用机制，一条连接支持同时处理多条请求。</p>
+<p align="center">
+<img src="/2020/05/10/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/Http2-Multiplexing.jpg" width="600">
+</p>
+
+<p>如上图所示，每个请求都会建立一个对应的双向数据流。而数据流又以消息的形式，来发送请求/响应报文。每个消息由一系列的数据帧组成并在连接中传递，另一方接收到后再组装为完整的消息进行处理。这样，就实现了多个请求同时在连接中传递。</p>
+<p>但要注意：</p>
+<ul>
+<li><p>这里仅可以解决HTTP请求的队首阻塞问题，但TCP首包阻塞的问题还是存在（某包丢失，后面的逆序包需要等待该包的重传）。</p>
+<blockquote>
+<p>这种情况需要在TCP也可以区分每条数据流进行独立的传输（QUIC）。</p>
+</blockquote>
+</li>
+<li><p>服务器单连接限速的情况。无论 OkHttp 还是 Chromium 网络库对于 HTTP/2.0 的连接，同一个域名只会保留一条连接，这种情况，需要修改网络库实现或者禁用HTTP/2.0。</p>
+</li>
+</ul>
+<h1 id="二、OkHttp的连接管理"><a href="#二、OkHttp的连接管理" class="headerlink" title="二、OkHttp的连接管理"></a>二、OkHttp的连接管理</h1><p>在了解了Http/1的持久连接和Http/2中的连接复用之后，接着来看下OkHttp中是如何实现对连接的管理的。</p>
+<p>很多人都知道，OkHttp通过一个连接池来进行连接的复用，但是不禁还有些疑问：</p>
+<ol>
+<li>什么情况下可以复用连接，什么情况下需要创建新的连接？</li>
+<li>连接什么时候才会被释放？</li>
+<li>在使用okhttp的时候，在连接管理这方面，我们还有哪些可以优化的？</li>
+</ol>
+<h2 id="2-1-连接的获取"><a href="#2-1-连接的获取" class="headerlink" title="2.1 连接的获取"></a>2.1 连接的获取</h2><p>连接的获取最终会调用到ExchangeFinder的find调用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">fun find(</span><br><span class="line">    client: OkHttpClient,</span><br><span class="line">    chain: RealInterceptorChain</span><br><span class="line">  ): ExchangeCodec &#123;</span><br><span class="line">    try &#123;</span><br><span class="line">      val resultConnection &#x3D; findHealthyConnection(</span><br><span class="line">          connectTimeout &#x3D; chain.connectTimeoutMillis,</span><br><span class="line">          readTimeout &#x3D; chain.readTimeoutMillis,</span><br><span class="line">          writeTimeout &#x3D; chain.writeTimeoutMillis,</span><br><span class="line">          pingIntervalMillis &#x3D; client.pingIntervalMillis,</span><br><span class="line">          connectionRetryEnabled &#x3D; client.retryOnConnectionFailure,</span><br><span class="line">          doExtensiveHealthChecks &#x3D; chain.request.method !&#x3D; &quot;GET&quot;</span><br><span class="line">      )</span><br><span class="line">      return resultConnection.newCodec(client, chain)</span><br><span class="line">    &#125; ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>findHealthyConnection在找到一个可用的连接后，将根据该连接类型（Http/1或Http/2连接）ExchangeCodec对象，来进行该连接上的请求和响应处理。</p>
+<p>findHealthyConnection的实现如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">private fun findHealthyConnection(</span><br><span class="line">    connectTimeout: Int,</span><br><span class="line">    readTimeout: Int,</span><br><span class="line">    writeTimeout: Int,</span><br><span class="line">    pingIntervalMillis: Int,</span><br><span class="line">    connectionRetryEnabled: Boolean,</span><br><span class="line">    doExtensiveHealthChecks: Boolean</span><br><span class="line">  ): RealConnection &#123;</span><br><span class="line">    while (true) &#123;</span><br><span class="line">      val candidate &#x3D; findConnection(</span><br><span class="line">          connectTimeout &#x3D; connectTimeout,</span><br><span class="line">          readTimeout &#x3D; readTimeout,</span><br><span class="line">          writeTimeout &#x3D; writeTimeout,</span><br><span class="line">          pingIntervalMillis &#x3D; pingIntervalMillis,</span><br><span class="line">          connectionRetryEnabled &#x3D; connectionRetryEnabled</span><br><span class="line">      )</span><br><span class="line"></span><br><span class="line">      &#x2F;&#x2F; 返回Heathy（可用）的连接</span><br><span class="line">      if (candidate.isHealthy(doExtensiveHealthChecks)) &#123;</span><br><span class="line">        return candidate</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      &#x2F;&#x2F; 标记不可用连接</span><br><span class="line">      candidate.noNewExchanges()</span><br><span class="line"></span><br><span class="line">      &#x2F;&#x2F; 尝试其他路由下能否获取到可用的连接</span><br><span class="line">      synchronized(connectionPool) &#123;</span><br><span class="line">        ...</span><br><span class="line">        val routesLeft &#x3D; routeSelection?.hasNext() ?: true</span><br><span class="line">        if (routesLeft) return@synchronized</span><br><span class="line">        ...</span><br><span class="line">        &#x2F;&#x2F; 路由耗尽，也无法找到可用的连接</span><br><span class="line">        throw IOException(&quot;exhausted all routes&quot;)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么什么是可用的连接呢？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">fun isHealthy(doExtensiveChecks: Boolean): Boolean &#123;</span><br><span class="line">    val nowNs &#x3D; System.nanoTime()</span><br><span class="line"></span><br><span class="line">    val rawSocket &#x3D; this.rawSocket!!</span><br><span class="line">    val socket &#x3D; this.socket!!</span><br><span class="line">    val source &#x3D; this.source!!</span><br><span class="line">    if (rawSocket.isClosed || socket.isClosed || socket.isInputShutdown ||</span><br><span class="line">            socket.isOutputShutdown) &#123;</span><br><span class="line">      return false</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    val http2Connection &#x3D; this.http2Connection</span><br><span class="line">    if (http2Connection !&#x3D; null) &#123;</span><br><span class="line">      return http2Connection.isHealthy(nowNs)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    val idleDurationNs &#x3D; nowNs - idleAtNs</span><br><span class="line">    if (idleDurationNs &gt;&#x3D; IDLE_CONNECTION_HEALTHY_NS &amp;&amp; doExtensiveChecks) &#123;</span><br><span class="line">      return socket.isHealthy(source)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return true</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中连接在如下情况是会变得不可用：</p>
+<ol>
+<li><p>socket被关闭（调用Socket的close方法关闭连接）</p>
+</li>
+<li><p>socket输入输出流被关闭（调用Socket的shutdownInput或shutdownOutput方法，但一般Http请求是通过结束标志如Content-Length来判断I/O是否结束的，而非通过暴力的shutdownInput或shutdownOutput）</p>
+</li>
+<li><p>Http2连接被关闭（调用shutdown来组织新的请求使用）或ping超时</p>
+<blockquote>
+<p>Http/2上的数据流超时，可能是这一个数据流有问题，也可能是整个连接有问题，为了确认连接是否有用，会发送一个ping帧探测，如果收到了pong（服务器和客户端打乒乓球的寓意）响应，那么证明连接是没有问题的。</p>
+</blockquote>
+</li>
+<li><p>对于空闲超过10秒的连接，探测性读取失败</p>
+<blockquote>
+<p>socket的close、输入输出流状态只是本地的Socket连接状态，这个连接也可能已经被远端服务器断开了，如果客户端再继续使用这个连接将会返回失败。okhttp的做法是通过设置一个很短的超时时间然后进行探测性的读取，如果发生超时则表示连接仍然可用：</p>
+</blockquote>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">fun Socket.isHealthy(source: BufferedSource): Boolean &#123;</span><br><span class="line">  try &#123;</span><br><span class="line">    val readTimeout &#x3D; soTimeout</span><br><span class="line">    try &#123;</span><br><span class="line">      soTimeout &#x3D; 1</span><br><span class="line">      return !source.exhausted()</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">      soTimeout &#x3D; readTimeout</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; catch (_: SocketTimeoutException) &#123;</span><br><span class="line">    return true &#x2F;&#x2F; Read timed out; socket is good.</span><br><span class="line">  &#125; catch (_: IOException) &#123;</span><br><span class="line">    return false &#x2F;&#x2F; Couldn&#39;t read; socket is closed.</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>接下来看看findConnection，这个函数比较长，我们分段来看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">private fun findConnection(</span><br><span class="line">    connectTimeout: Int,</span><br><span class="line">    readTimeout: Int,</span><br><span class="line">    writeTimeout: Int,</span><br><span class="line">    pingIntervalMillis: Int,</span><br><span class="line">    connectionRetryEnabled: Boolean</span><br><span class="line">  ): RealConnection &#123;</span><br><span class="line">    ...</span><br><span class="line">    synchronized(connectionPool) &#123;</span><br><span class="line">      ...</span><br><span class="line">      val callConnection &#x3D; call.connection</span><br><span class="line">      releasedConnection &#x3D; callConnection</span><br><span class="line">      </span><br><span class="line">      &#x2F;&#x2F; case 1&amp;2 请求已经分配了连接，但是连接不可用</span><br><span class="line">      toClose &#x3D; if (callConnection !&#x3D; null &amp;&amp; (callConnection.noNewExchanges ||</span><br><span class="line">              !sameHostAndPort(callConnection.route().address.url))) &#123;</span><br><span class="line">        &#x2F;&#x2F; 这里call.connection会被置为null</span><br><span class="line">        call.releaseConnectionNoEvents()</span><br><span class="line">      &#125; else &#123;</span><br><span class="line">        null</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      &#x2F;&#x2F; case 3 请求已经分配了连接，并且连接可用</span><br><span class="line">      if (call.connection !&#x3D; null) &#123;</span><br><span class="line">        result &#x3D; call.connection</span><br><span class="line">        releasedConnection &#x3D; null</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      &#x2F;&#x2F; 请求未被分配过连接或已经分配的连接不可用</span><br><span class="line">      if (result &#x3D;&#x3D; null) &#123;</span><br><span class="line">        ...</span><br><span class="line">        &#x2F;&#x2F; 从连接池获取成功</span><br><span class="line">        if (connectionPool.callAcquirePooledConnection(address, call, null, false)) &#123;</span><br><span class="line">          foundPooledConnection &#x3D; true</span><br><span class="line">          result &#x3D; call.connection</span><br><span class="line">        &#125; else if (nextRouteToTry !&#x3D; null) &#123;</span><br><span class="line">          &#x2F;&#x2F; 从连接池获取失败</span><br><span class="line">          selectedRoute &#x3D; nextRouteToTry</span><br><span class="line">          nextRouteToTry &#x3D; null</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    toClose?.closeQuietly()</span><br><span class="line">    ...</span><br><span class="line">    if (result !&#x3D; null) &#123;</span><br><span class="line">      return result!!</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第一部分中，请求已经分配了连接包含3种情形：</p>
+<ol>
+<li><p><strong>连接不可用</strong>。在之前findHealthyConnection中，在选定一条适用于当前请求的连接后，还会进行可用判断，就像找到了一条往目的地的路，还要看这条路通不通。如果连接不可用的话，就会标记连接为noNewExchanges状态，这个时候只能继续寻找其他适用的连接。</p>
+</li>
+<li><p><strong>连接可用，但是这条连接的目标地址或端口与当前请求不一样</strong>。这个情况比较特殊，先介绍下在Http/2中，除了连接复用外，还有一种<a href="https://daniel.haxx.se/blog/2016/08/18/http2-connection-coalescing/" target="_blank" rel="noopener">请求聚合</a>的技术，简单来说，如果两个请求的域名不同，但是IP地址端口号都一样（且域名验证通过），那么就可以复用这个IP地址端口上的连接。</p>
+<p> 但是，服务器可能并不支持请求聚合，这个时候就会返回421错误码。okhttp在收到错误码后会进行重试，在为重试请求挑选连接的时候，如果发现请求的域名和连接的域名并不一样，说明就发生了这种情况，这个时候只能放弃这个路由寻找其他可用的连接。</p>
+<ol start="2">
+<li><p><strong>连接可用，继续使用这个连接</strong>。一般来说，只有请求出错重试，才会有这种已经分配了连接但又走到了连接分配的情况，那么什么情况下可以继续使用之前发生出错 的连接呢？</p>
+<p>对于408和503错误码，它们都可能表示服务器现在繁忙而无法及时处理或应答，而不是连接有问题，这个时候就可以使用相同的连接进行重试。</p>
+</li>
+</ol>
+</li>
+</ol>
+<p>请求未被分配过连接，或者已经分配了连接但连接不可用，那么就会重新尝试从连接池获取可用连接。callAcquirePooledConnection的实现不做深入，只是说下这里的逻辑是从连接池查找有相同域名和端口号（以及协议版本、代理等等）的连接，如果找到了，那么就可以复用这一条连接。找不到那么继续后面的逻辑</p>
+<blockquote>
+<p>这里selectedRoute和nextRouteToTry我们后面再说。</p>
+</blockquote>
+<p>继续看第二部分：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">&#x2F;&#x2F; 路由选择</span><br><span class="line">var newRouteSelection &#x3D; false</span><br><span class="line">&#x2F;&#x2F; 当前代理方式下，没有为当前请求选择过路由，</span><br><span class="line">&#x2F;&#x2F; 或者当前代理方式的路由耗尽，会切换到下一种代理方式下进行尝试</span><br><span class="line">if (selectedRoute &#x3D;&#x3D; null &amp;&amp; (routeSelection &#x3D;&#x3D; null || !routeSelection!!.hasNext())) &#123;</span><br><span class="line">  var localRouteSelector &#x3D; routeSelector</span><br><span class="line">  if (localRouteSelector &#x3D;&#x3D; null) &#123;</span><br><span class="line">    localRouteSelector &#x3D; RouteSelector(address, call.client.routeDatabase, call, eventListener)</span><br><span class="line">    this.routeSelector &#x3D; localRouteSelector</span><br><span class="line">  &#125;</span><br><span class="line">  newRouteSelection &#x3D; true</span><br><span class="line">  routeSelection &#x3D; localRouteSelector.next()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">var routes: List&lt;Route&gt;? &#x3D; null</span><br><span class="line">synchronized(connectionPool) &#123;</span><br><span class="line">  if (call.isCanceled()) throw IOException(&quot;Canceled&quot;)</span><br><span class="line"></span><br><span class="line">  if (newRouteSelection) &#123;</span><br><span class="line">    &#x2F;&#x2F; 选择了一个新的路由，看看该连接是否可以进行请求聚合</span><br><span class="line">    if (connectionPool.callAcquirePooledConnection(address, call, routes, false)) &#123;</span><br><span class="line">      foundPooledConnection &#x3D; true</span><br><span class="line">      result &#x3D; call.connection</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; 连接池没找到的情况</span><br><span class="line">  if (!foundPooledConnection) &#123;</span><br><span class="line">    if (selectedRoute &#x3D;&#x3D; null) &#123;</span><br><span class="line">      selectedRoute &#x3D; routeSelection!!.next()</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    &#x2F;&#x2F; 创建一个新的连接</span><br><span class="line">    result &#x3D; RealConnection(connectionPool, selectedRoute!!)</span><br><span class="line">    connectingConnection &#x3D; result</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 连接池找到了的情况</span><br><span class="line">if (foundPooledConnection) &#123;</span><br><span class="line">  eventListener.connectionAcquired(call, result!!)</span><br><span class="line">  return result!!</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">result!!.connect(</span><br><span class="line">    connectTimeout,</span><br><span class="line">    readTimeout,</span><br><span class="line">    writeTimeout,</span><br><span class="line">    pingIntervalMillis,</span><br><span class="line">    connectionRetryEnabled,</span><br><span class="line">    call,</span><br><span class="line">    eventListener</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>首先明确下这里Route和Selection的概念：根据代理方式的不同，网络请求的路由会有所不同，例如直连（Direct）方式下，会使用DNS解析返回的一组地址，而HTTP代理方式下，会使用代理服务器进行DNS解析返回的一组地址。在这里，每个解析地址都表示一个路由（Route），而每种代理下的路由集合被表述为一组路由选取（Selection）。</p>
+<p>然后findConnection到了这里，就表明连接池没有相同域名端口的可用连接，在创建新的连接之前，还会尝试使用Http/2的请求聚合来查找可以承载当前请求的连接。</p>
+<p>callAcquirePooledConnection会一次性地查询在当前代理方式下是否有可以进行请求聚合的连接，连接池找到了的话，就可以把这条连接拿去复用。</p>
+<p>没有找到的话，可能是连接池里也没有可以进行请求聚合的连接，这个比较好理解；也可能是根本就没在连接池里找：</p>
+<ul>
+<li>已经为当前请求指定了路由（selectedRoute不为空）的情况，会用这个指定的路由去创建新的连接，这个我们后面再说</li>
+<li>当前代理方式下，已经找过了可以请求聚合的连接，但连接不可用/请求发生失败进行重试。这个代理方式下的请求聚合是用不成了，但是不会切换到其他代理方式尝试请求聚合，而是会在当前代理方式下创建新的连接</li>
+<li>当前代理方式下，之前路由上创建的连接不可用或失败了，继续尝试其他路由</li>
+</ul>
+<p>最后一部分：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">var socket: Socket? &#x3D; null</span><br><span class="line">synchronized(connectionPool) &#123;</span><br><span class="line">  connectingConnection &#x3D; null</span><br><span class="line">  if (connectionPool.callAcquirePooledConnection(address, call, routes, true)) &#123;</span><br><span class="line">    result!!.noNewExchanges &#x3D; true</span><br><span class="line">    socket &#x3D; result!!.socket()</span><br><span class="line">    result &#x3D; call.connection</span><br><span class="line">    nextRouteToTry &#x3D; selectedRoute</span><br><span class="line">  &#125; else &#123;</span><br><span class="line">    connectionPool.put(result!!)</span><br><span class="line">    call.acquireConnectionNoEvents(result!!)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">socket?.closeQuietly()</span><br><span class="line"></span><br><span class="line">eventListener.connectionAcquired(call, result!!)</span><br><span class="line">return result!!</span><br></pre></td></tr></table></figure>
+<p>针对并发请求的情况，在之前可能因为在连接池找不到可用连接走到了创建新连接的步骤，而如果这些请求是可以进行聚合的，那么这些多出的连接就造成了资源的浪费。这里，在每个线程创建完连接后，都会检查连接池中是否已经有其他人创建好的、可以用来请求聚合的连接，如果有的话就会关闭自己刚刚创建的。</p>
+<p>但也存在一种情况，其他人创建好的连接可能很快变得不可用，那么当发生失败时，会回退到自己之前选择好的路由再次创建新的连接。</p>
+<p>在第一部分中，nextRouteToTry就会作为请求重试时提前选定的路由，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">&#125; else if (nextRouteToTry !&#x3D; null) &#123;</span><br><span class="line">  selectedRoute &#x3D; nextRouteToTry</span><br><span class="line">  nextRouteToTry &#x3D; null</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而在第二部分中就会使用这个的选定的路由创建新的连接。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">if (!foundPooledConnection) &#123;</span><br><span class="line">    if (selectedRoute &#x3D;&#x3D; null) &#123;</span><br><span class="line">      ...</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    result &#x3D; RealConnection(connectionPool, selectedRoute!!)</span><br><span class="line">    connectingConnection &#x3D; result</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-2-连接的清理"><a href="#2-2-连接的清理" class="headerlink" title="2.2 连接的清理"></a>2.2 连接的清理</h2><p>在okhttp中，是不支持Http1.0的，也就意味着所有的连接默认都是持久连接。而连接池对非活跃连接的清理，是通过cleanup调用来完成的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">private val cleanupQueue: TaskQueue &#x3D; taskRunner.newQueue()</span><br><span class="line">private val cleanupTask &#x3D; object : Task(&quot;$okHttpName ConnectionPool&quot;) &#123;</span><br><span class="line">    override fun runOnce() &#x3D; cleanup(System.nanoTime())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>cleanupTask在TaskQueue里面调度并调用cleanup，而TaskQueue的逻辑，简单来说是这样的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">private val cleanupRunnable &#x3D; object : Runnable &#123;</span><br><span class="line">    override fun run() &#123;</span><br><span class="line">      while (true) &#123;</span><br><span class="line">        val waitNanos &#x3D; cleanup(System.nanoTime())</span><br><span class="line">        if (waitNanos &#x3D;&#x3D; -1L) return</span><br><span class="line">        try &#123;</span><br><span class="line">          this@RealConnectionPool.waitNanos(waitNanos)</span><br><span class="line">        &#125; catch (_: InterruptedException) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果cleanup的返回值是非负数，就会等待相应的时间后继续进行清理。关键在于cleanup：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">fun cleanup(now: Long): Long &#123;</span><br><span class="line">    ...</span><br><span class="line">    synchronized(this) &#123;</span><br><span class="line">      for (connection in connections) &#123;</span><br><span class="line">        &#x2F;&#x2F; 仍在使用的连接</span><br><span class="line">        if (pruneAndGetAllocationCount(connection, now) &gt; 0) &#123;</span><br><span class="line">          inUseConnectionCount++</span><br><span class="line">          continue</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        idleConnectionCount++</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; 更新空闲时间最长的连接</span><br><span class="line">        val idleDurationNs &#x3D; now - connection.idleAtNs</span><br><span class="line">        if (idleDurationNs &gt; longestIdleDurationNs) &#123;</span><br><span class="line">          longestIdleDurationNs &#x3D; idleDurationNs</span><br><span class="line">          longestIdleConnection &#x3D; connection</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      when &#123;</span><br><span class="line">        longestIdleDurationNs &gt;&#x3D; this.keepAliveDurationNs</span><br><span class="line">            || idleConnectionCount &gt; this.maxIdleConnections -&gt; &#123;</span><br><span class="line">          &#x2F;&#x2F; 空闲时间超过keepAliveDurationNs，或空闲连接数超过keepAliveDurationNs</span><br><span class="line">          connections.remove(longestIdleConnection)</span><br><span class="line">          if (connections.isEmpty()) cleanupQueue.cancelAll()</span><br><span class="line">        &#125;</span><br><span class="line">        idleConnectionCount &gt; 0 -&gt; &#123;</span><br><span class="line">          &#x2F;&#x2F; 没有过期的连接，那么等到空闲最久的连接过期后再来清理</span><br><span class="line">          return keepAliveDurationNs - longestIdleDurationNs</span><br><span class="line">        &#125;</span><br><span class="line">        inUseConnectionCount &gt; 0 -&gt; &#123;</span><br><span class="line">          &#x2F;&#x2F; 没有空闲连接，keepAliveDurationNs后再来清理</span><br><span class="line">          return keepAliveDurationNs</span><br><span class="line">        &#125;</span><br><span class="line">        else -&gt; &#123;</span><br><span class="line">          &#x2F;&#x2F; 没有连接</span><br><span class="line">          return -1</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    longestIdleConnection!!.socket().closeQuietly()</span><br><span class="line">    </span><br><span class="line">    &#x2F;&#x2F; 继续清理</span><br><span class="line">    return 0L</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的逻辑比较清晰，我们把不再被任何请求使用的连接叫做空闲连接，把空闲时间超过阈值keepAliveDurationNs（一般为5分钟）的连接叫做过期连接，我们要清理的就是这些过期连接。</p>
+<p>每次cleanup调用，都会找出空闲时间最久的连接：</p>
+<ul>
+<li>如果这个连接已经过期了，那么会立即进行清理（并继续）。不过也有特例，默认连接池最多允许5个空闲连接，如果超过了这个数量，也会清理掉这个连接</li>
+<li>如果这个连接还未过期，那么会等到它过期的时候再来清理</li>
+<li>如果没有空闲连接，那么默认会等keepAliveDurationNs后再来清理</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%BD%91%E7%BB%9C%E4%BC%98%E5%8C%96/" rel="tag"># 网络优化</a>
+              <a href="/tags/%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8/" rel="tag"># 连接复用</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/05/10/DNS%E4%BC%98%E5%8C%96/" rel="prev" title="网络优化《一》：DNS">
+      <i class="fa fa-chevron-left"></i> 网络优化《一》：DNS
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#一、Http中的连接复用"><span class="nav-number">1.</span> <span class="nav-text">一、Http中的连接复用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#二、OkHttp的连接管理"><span class="nav-number">2.</span> <span class="nav-text">二、OkHttp的连接管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-1-连接的获取"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 连接的获取</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-2-连接的清理"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 连接的清理</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">IceAeterna</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">IceAeterna</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/Kobayaxi.model.json"},"display":{"position":"left","width":150,"height":300,"hOffset":30,"vOffset":30},"mobile":{"show":true},"log":false});</script></body>
+</html>
